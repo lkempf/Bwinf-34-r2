@@ -23,13 +23,27 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			public List<Node> ReverseNeighbours { get; private set; } = new List<Node>();
 			public bool IsExit { get; set; } = false;
 			public int SureNeighbors { get; set; }
-			
+
+			public int ConnectedComponent { get; set; }
+
+			public bool OnStack { get; set; } = false;
+			public int Index { get; set; } = -1;
+			public int LowLink { get; set; } = -1;
+
 			public readonly Tuple<int, int> Position;
 
 			public Node(bool isExit, Tuple<int, int> position)
 			{
 				IsExit = isExit;
 				Position = position;
+			}
+
+			public void Reset()
+			{
+				OnStack = false;
+				Index = -1;
+				LowLink = -1;
+				ConnectedComponent = -1;
 			}
 		}
 
@@ -44,7 +58,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 		private void CreateGraph()
 		{
-			Node[,] positionToNode = new Node[worldMap.GetLength(0), worldMap.GetLength(1)]; 
+			Node[,] positionToNode = new Node[worldMap.GetLength(0), worldMap.GetLength(1)];
 			worldGraph = new List<Node>(worldMap.Length);
 			var currentCombo = new List<Node>();
 
@@ -55,10 +69,15 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 				{
 					if (worldMap[i, j] == Tile.Exit || worldMap[i, j] == Tile.Nothing)
 					{
-						var node = new Node(worldMap[i, j] == Tile.Exit, new Tuple<int, int>(i, j));
+						var node = new Node(worldMap[i, j] == Tile.Exit, new Tuple<int, int>(j + 1, i + 1));
 						positionToNode[i, j] = node;
 						currentCombo.Add(node);
 						worldGraph.Add(node);
+						if (worldMap[i, j] == Tile.Exit)
+						{
+							ProcessCombo(ref currentCombo);
+							currentCombo.Add(node);
+						}
 					}
 					else if (currentCombo.Count != 0) //Wand
 					{
@@ -77,6 +96,11 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 					{
 						var node = positionToNode[i, j];
 						currentCombo.Add(node);
+						if(worldMap[i, j] == Tile.Exit)
+						{
+							ProcessCombo(ref currentCombo);
+							currentCombo.Add(node);
+						}
 						//worldGraph.Add(node);
 					}
 					else if (currentCombo.Count != 0) //Wand
@@ -86,6 +110,9 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 				}
 				ProcessCombo(ref currentCombo);
 			}
+
+			foreach (var node in worldGraph.Where(n => n.IsExit))
+				node.Neighbours.Clear();
 		}
 
 		private void ProcessCombo(ref List<Node> currentCombo)
@@ -108,7 +135,8 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 		private void ParseMap(string asciiMap)
 		{
-			int numberOfLines = asciiMap.Count(c => c == Environment.NewLine.First());
+			asciiMap = asciiMap.Trim('\r', '\n');
+			int numberOfLines = asciiMap.Count(c => c == Environment.NewLine.First()) + 1;
 			asciiMap = asciiMap.Replace(Environment.NewLine, "");
 			int numberOfRows = asciiMap.Length / numberOfLines;
 
@@ -136,44 +164,84 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			}
 		}
 
-		public List<Tuple<int, int>> Solve()
+		List<List<Node>> connectedComponents = new List<List<Node>>();
+		public IEnumerable<Tuple<int, int>> Solve()
 		{
-			Queue<Node> queue = new Queue<Node>();
-			foreach (var node in worldGraph.Where(n => n.IsExit))
-			{
-				queue.Enqueue(node);
-			}
+			foreach (var node in worldGraph)
+				node.Reset();
+			connectedComponents.Clear();
+			index = -1;
 
-			while (queue.Count != 0)
+			foreach (var node in worldGraph)
+				if (node.Index == -1)
+					ConnectedComponent(node);
+
+			List<bool> componentLeadsToExit = new List<bool>(connectedComponents.Count);
+			connectedComponents.ForEach(c => componentLeadsToExit.Add(false));
+
+			for(int i = 0; i < connectedComponents.Count; i++)
 			{
-				var currentNode = queue.Dequeue();
-				if(currentNode.IsExit  || currentNode.SureNeighbors == currentNode.Neighbours.Count)
+				bool onlyLeadsToExit = true, hasOut = false;
+				foreach (var node in connectedComponents[i])
 				{
-					foreach (var neighbour in currentNode.ReverseNeighbours)
+					foreach(var neigbour in node.Neighbours)
 					{
-						if (!neighbour.IsExit && neighbour.SureNeighbors != currentNode.Neighbours.Count)
+						if (neigbour.ConnectedComponent != node.ConnectedComponent)
 						{
-							queue.Enqueue(neighbour);
+							hasOut = true;
+							if (!componentLeadsToExit[neigbour.ConnectedComponent])
+								onlyLeadsToExit = false;
 						}
 					}
 				}
-				else
+
+				componentLeadsToExit[i] = onlyLeadsToExit;
+				if (!hasOut)
+					componentLeadsToExit[i] = connectedComponents[i].Any(n => n.IsExit);
+			}
+
+			return connectedComponents.Zip(componentLeadsToExit, (c, b) => b ? c : new List<Node>())
+				.SelectMany(c => c)
+				.Select(n => n.Position)
+				.OrderBy(n => n);
+		}
+
+		int index = -1;
+		Stack<Node> stack = new Stack<Node>();
+		private void ConnectedComponent(Node currentNode)
+		{
+			index++;
+			currentNode.Index = index;
+			currentNode.LowLink = index;
+			currentNode.OnStack = true;
+			stack.Push(currentNode);
+
+			foreach (var neighbour in currentNode.Neighbours)
+			{
+				if (neighbour.Index == -1)
 				{
-					currentNode.SureNeighbors++;
-					if(currentNode.SureNeighbors == currentNode.Neighbours.Count)
-					{
-						foreach (var neighbour in currentNode.ReverseNeighbours)
-						{
-							if (!neighbour.IsExit && neighbour.SureNeighbors != currentNode.Neighbours.Count)
-							{
-								queue.Enqueue(neighbour);
-							}
-						}
-					}
+					ConnectedComponent(neighbour);
+					currentNode.LowLink = Math.Min(currentNode.LowLink, neighbour.LowLink);
+				}
+				else if (neighbour.OnStack)
+				{
+					currentNode.LowLink = Math.Min(currentNode.LowLink, neighbour.LowLink);
 				}
 			}
 
-			return worldGraph.Where(n => n.Neighbours.Count == n.SureNeighbors).Select(n => n.Position).ToList();
+			if (currentNode.LowLink == currentNode.Index)
+			{
+				List<Node> currentComponent = new List<Node>();
+				Node nodeFromStack;
+				do
+				{
+					nodeFromStack = stack.Pop();
+					nodeFromStack.OnStack = false;
+					nodeFromStack.ConnectedComponent = connectedComponents.Count;
+					currentComponent.Add(nodeFromStack);
+				} while (nodeFromStack != currentNode);
+				connectedComponents.Add(currentComponent);
+			}
 		}
 	}
 }

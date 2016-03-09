@@ -38,6 +38,13 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 			//Welt einlesen
 			World world = new World(File.ReadAllText(fileNames[index]));
+
+			foreach(var result in world.Solve())
+			{
+				Console.WriteLine(result.ToString());
+			}
+
+			Console.ReadLine();
 		}
 	}
 }
