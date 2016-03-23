@@ -69,10 +69,13 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 				{
 					if (worldMap[i, j] == Tile.Exit || worldMap[i, j] == Tile.Nothing)
 					{
+						//Erstelle neuen Knoten für die aktuelle Postition
 						var node = new Node(worldMap[i, j] == Tile.Exit, new Tuple<int, int>(j + 1, i + 1));
 						positionToNode[i, j] = node;
 						currentCombo.Add(node);
 						worldGraph.Add(node);
+
+						//Wenn ein YamYam über einen Ausgang erreicht, dann erreicht es nicht die nächste Wand -> Ausgang ist Combobreaker
 						if (worldMap[i, j] == Tile.Exit)
 						{
 							ProcessCombo(ref currentCombo);
@@ -94,6 +97,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 				{
 					if (worldMap[i, j] == Tile.Exit || worldMap[i, j] == Tile.Nothing)
 					{
+						//Keinen neuen Knoten erstellen, ist bereits oben geschehen
 						var node = positionToNode[i, j];
 						currentCombo.Add(node);
 						if(worldMap[i, j] == Tile.Exit)
@@ -101,7 +105,6 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 							ProcessCombo(ref currentCombo);
 							currentCombo.Add(node);
 						}
-						//worldGraph.Add(node);
 					}
 					else if (currentCombo.Count != 0) //Wand
 					{
@@ -111,10 +114,12 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 				ProcessCombo(ref currentCombo);
 			}
 
+			//Wenn man ein Ausgangsfeld erreicht, dann kann man es nicht mehr verlassen -> Alle ausgehenden Kanten von Ausgängen müssen gelöscht werden
 			foreach (var node in worldGraph.Where(n => n.IsExit))
 				node.Neighbours.Clear();
 		}
 
+		//Fügt eine Kante für alle Knoten in einer Sequenz zum Ende und Anfang der Sequenz hinzu
 		private void ProcessCombo(ref List<Node> currentCombo)
 		{
 			foreach (var node in currentCombo)
@@ -135,11 +140,13 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 		private void ParseMap(string asciiMap)
 		{
+			//Zeilenumbrüche entfernen und Dimensionen der Welt berechnen
 			asciiMap = asciiMap.Trim('\r', '\n');
 			int numberOfLines = asciiMap.Count(c => c == Environment.NewLine.First()) + 1;
 			asciiMap = asciiMap.Replace(Environment.NewLine, "");
 			int numberOfRows = asciiMap.Length / numberOfLines;
 
+			//Einzelne Zeichen parse und 2D-Array aufbauen
 			worldMap = new Tile[numberOfLines, numberOfRows];
 			for (int x = 0; x < worldMap.GetLength(0); x++)
 			{
@@ -167,11 +174,13 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 		List<List<Node>> connectedComponents = new List<List<Node>>();
 		public IEnumerable<Tuple<int, int>> Solve()
 		{
+			//Graph auf Ausgangszustand zurücksetzen
 			foreach (var node in worldGraph)
 				node.Reset();
 			connectedComponents.Clear();
 			index = -1;
 
+			//Tarjan für alle schwachen Zusammenhangskomponenten aufrufen
 			foreach (var node in worldGraph)
 				if (node.Index == -1)
 					ConnectedComponent(node);
@@ -181,6 +190,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 			for(int i = 0; i < connectedComponents.Count; i++)
 			{
+				//Prüfen mit welchen Zusammenhangskomponenten die aktuelle Zusammenhangskomponente verbunden ist
 				bool onlyLeadsToExit = true, hasOut = false;
 				foreach (var node in connectedComponents[i])
 				{
@@ -196,41 +206,51 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 				}
 
 				componentLeadsToExit[i] = onlyLeadsToExit;
+				//Alle Ausgänge als sicher makieren
 				if (!hasOut)
 					componentLeadsToExit[i] = connectedComponents[i].Any(n => n.IsExit);
 			}
 
+			//Wähle alle Komponenten aus, die als sicher makierts sind und gibt die Postitionen ihrer Knoten aus
 			return connectedComponents.Zip(componentLeadsToExit, (c, b) => b ? c : new List<Node>())
 				.SelectMany(c => c)
 				.Select(n => n.Position)
 				.OrderBy(n => n);
 		}
 
+
+		//Invarianten für Tarjan
 		int index = -1;
 		Stack<Node> stack = new Stack<Node>();
 		private void ConnectedComponent(Node currentNode)
 		{
+			//Aktuellen Knoten als besucht markieren
 			index++;
 			currentNode.Index = index;
 			currentNode.LowLink = index;
 			currentNode.OnStack = true;
 			stack.Push(currentNode);
 
+			//Durch Nachbarn iterieren
 			foreach (var neighbour in currentNode.Neighbours)
 			{
+				//Unbesuchter Nachbar -> besuchen
 				if (neighbour.Index == -1)
 				{
 					ConnectedComponent(neighbour);
 					currentNode.LowLink = Math.Min(currentNode.LowLink, neighbour.LowLink);
 				}
+				//Nachbar auf Stack -> Lowlink aktualisieren
 				else if (neighbour.OnStack)
 				{
 					currentNode.LowLink = Math.Min(currentNode.LowLink, neighbour.LowLink);
 				}
 			}
 
+			//Zusammenhangskomponeten gefunden
 			if (currentNode.LowLink == currentNode.Index)
 			{
+				//Zusammenhangskomponenten vom Stack entfernen
 				List<Node> currentComponent = new List<Node>();
 				Node nodeFromStack;
 				do
@@ -240,6 +260,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 					nodeFromStack.ConnectedComponent = connectedComponents.Count;
 					currentComponent.Add(nodeFromStack);
 				} while (nodeFromStack != currentNode);
+				//Und zurückgeben
 				connectedComponents.Add(currentComponent);
 			}
 		}
