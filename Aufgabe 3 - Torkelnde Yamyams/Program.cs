@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -39,12 +40,48 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			//Welt einlesen
 			World world = new World(File.ReadAllText(fileNames[index]));
 
-			foreach(var result in world.Solve())
-			{
-				Console.WriteLine(result.ToString());
-			}
+			Console.WriteLine(world.Solve().Count());
+			//foreach(var result in world.Solve())
+			//{
+			//	Console.WriteLine(result.ToString());
+			//}
+
+			Benchmark(world, 1);
 
 			Console.ReadLine();
+		}
+
+		private static IEnumerable<Tuple<int, int>> result;
+		private static void Benchmark(World world, int iterations)
+		{
+			if (Debugger.IsAttached)
+				Console.WriteLine("Bitte starten sie das Programm ohne einen Debugger um ein genaues Ergebnis zu erhalten!");
+
+			GC.Collect();
+			GC.WaitForPendingFinalizers();
+			GC.Collect();
+
+			//Aufwärmen
+			world.Solve();
+			Console.WriteLine($"Benchmark mit {iterations * 10} Iterationen wird gestartet");
+
+			Stopwatch stopwatch = new Stopwatch();
+			stopwatch.Start();
+			for (int i = 0; i < iterations; i++) //Schleifenoverhead reduzieren
+			{
+				result = world.Solve();
+				result = world.Solve();
+				result = world.Solve();
+				result = world.Solve();
+				result = world.Solve();
+				result = world.Solve();
+				result = world.Solve();
+				result = world.Solve();
+				result = world.Solve();
+				result = world.Solve();
+			}
+			stopwatch.Stop();
+			Console.WriteLine((stopwatch.Elapsed.TotalSeconds / (iterations * 10)).ToString("0.000000") + " s");
 		}
 	}
 }

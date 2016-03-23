@@ -22,26 +22,27 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			public List<Node> Neighbours { get; private set; } = new List<Node>();
 			public List<Node> ReverseNeighbours { get; private set; } = new List<Node>();
 			public bool IsExit { get; set; } = false;
-			public int SureNeighbors { get; set; }
+			public int Index { get; private set; }
 
 			public int ConnectedComponent { get; set; }
 
 			public bool OnStack { get; set; } = false;
-			public int Index { get; set; } = -1;
+			public int Label { get; set; } = -1;
 			public int LowLink { get; set; } = -1;
 
 			public readonly Tuple<int, int> Position;
 
-			public Node(bool isExit, Tuple<int, int> position)
+			public Node(bool isExit, Tuple<int, int> position, int index)
 			{
 				IsExit = isExit;
 				Position = position;
+				Index = index;
 			}
 
 			public void Reset()
 			{
 				OnStack = false;
-				Index = -1;
+				Label = -1;
 				LowLink = -1;
 				ConnectedComponent = -1;
 			}
@@ -70,7 +71,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 					if (worldMap[i, j] == Tile.Exit || worldMap[i, j] == Tile.Nothing)
 					{
 						//Erstelle neuen Knoten für die aktuelle Postition
-						var node = new Node(worldMap[i, j] == Tile.Exit, new Tuple<int, int>(j + 1, i + 1));
+						var node = new Node(worldMap[i, j] == Tile.Exit, new Tuple<int, int>(j + 1, i + 1), worldGraph.Count);
 						positionToNode[i, j] = node;
 						currentCombo.Add(node);
 						worldGraph.Add(node);
@@ -182,8 +183,8 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 			//Tarjan für alle schwachen Zusammenhangskomponenten aufrufen
 			foreach (var node in worldGraph)
-				if (node.Index == -1)
-					ConnectedComponent(node);
+				if (node.Label == -1)
+					ConnectedComponent(node.Index);
 
 			List<bool> componentLeadsToExit = new List<bool>(connectedComponents.Count);
 			connectedComponents.ForEach(c => componentLeadsToExit.Add(false));
@@ -221,23 +222,24 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 		//Invarianten für Tarjan
 		int index = -1;
-		Stack<Node> stack = new Stack<Node>();
-		private void ConnectedComponent(Node currentNode)
+		Stack<int> stack = new Stack<int>();
+		private void ConnectedComponent(int n)
 		{
 			//Aktuellen Knoten als besucht markieren
+			Node currentNode = worldGraph[n];
 			index++;
-			currentNode.Index = index;
+			currentNode.Label = index;
 			currentNode.LowLink = index;
 			currentNode.OnStack = true;
-			stack.Push(currentNode);
+			stack.Push(currentNode.Index);
 
 			//Durch Nachbarn iterieren
 			foreach (var neighbour in currentNode.Neighbours)
 			{
 				//Unbesuchter Nachbar -> besuchen
-				if (neighbour.Index == -1)
+				if (neighbour.Label == -1)
 				{
-					ConnectedComponent(neighbour);
+					ConnectedComponent(neighbour.Index);
 					currentNode.LowLink = Math.Min(currentNode.LowLink, neighbour.LowLink);
 				}
 				//Nachbar auf Stack -> Lowlink aktualisieren
@@ -248,14 +250,14 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			}
 
 			//Zusammenhangskomponeten gefunden
-			if (currentNode.LowLink == currentNode.Index)
+			if (currentNode.LowLink == currentNode.Label)
 			{
 				//Zusammenhangskomponenten vom Stack entfernen
 				List<Node> currentComponent = new List<Node>();
 				Node nodeFromStack;
 				do
 				{
-					nodeFromStack = stack.Pop();
+					nodeFromStack = worldGraph[stack.Pop()];
 					nodeFromStack.OnStack = false;
 					nodeFromStack.ConnectedComponent = connectedComponents.Count;
 					currentComponent.Add(nodeFromStack);
