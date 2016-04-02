@@ -13,6 +13,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Newtonsoft.Json;
+using Microsoft.Win32;
+using System.IO;
 
 namespace Aufgabe_1___Geburtstagskuchen__GUI_
 {
@@ -33,8 +36,11 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private void DrawingCanvas_MouseDown(object sender, MouseButtonEventArgs e)
 		{
-			var mousePosition = e.GetPosition(DrawingCanvas);
-			cake.AddCandle((int)mousePosition.X, (int)mousePosition.Y, 0);
+			if (!running)
+			{
+				var mousePosition = e.GetPosition(DrawingCanvas);
+				cake.AddCandle((int)mousePosition.X, (int)mousePosition.Y, 0);
+			}
 		}
 
 		private void DrawingCanvas_Loaded(object sender, RoutedEventArgs e)
@@ -62,7 +68,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			if (SizeSlider == null || angleSlider == null || DrawingCanvas == null)
 				return;
 
-			cake = new Cake((int)SizeSlider.Value, (float)angleSlider.Value);
+			cake = new Cake((int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value);
 			cake.Render(ref DrawingCanvas);
 
 			generator = null;
@@ -72,8 +78,8 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		{
 			if(!running)
 			{
-				if (generator == null)
-					generator = new CakeGenerator((int)CandleCountSlider.Value, (int)SizeSlider.Value, (float)angleSlider.Value);
+				if (generator == null || generator.NumberOfCandles != (int)Math.Round(CandleCountSlider.Value, 0))
+					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value);
 				ProgressBar.IsIndeterminate = true;
 				source = new CancellationTokenSource();
 				generator.Optimize(int.Parse(IterationsTextBox.Text), source.Token, OptimizationEndedCallback);
@@ -103,12 +109,28 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private void OpenButton_Click(object sender, RoutedEventArgs e)
 		{
-
+			OpenFileDialog dialog = new OpenFileDialog();
+			dialog.Filter = "Innovatives Dateiformat|*.json";
+			dialog.CheckFileExists = true;
+			dialog.ShowDialog();
+			try
+			{
+				cake = JsonConvert.DeserializeObject<Cake>(File.ReadAllText(dialog.FileName));
+				cake.Render(ref DrawingCanvas);
+			}
+			catch (JsonReaderException)
+			{
+				MessageBox.Show("Die Datei konnte nicht geöffnet werden");
+			}
 		}
 
 		private void SaveButton_Click(object sender, RoutedEventArgs e)
 		{
-
+			SaveFileDialog dialog = new SaveFileDialog();
+			dialog.Filter = "Innovatives Dateiformat|*.json";
+			dialog.OverwritePrompt = true;
+			dialog.ShowDialog();
+			File.WriteAllText(dialog.FileName, JsonConvert.SerializeObject(cake));
 		}
 	}
 }

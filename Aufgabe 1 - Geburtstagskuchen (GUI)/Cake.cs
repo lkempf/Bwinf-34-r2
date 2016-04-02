@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using System.Diagnostics;
 
 namespace Aufgabe_1___Geburtstagskuchen__GUI_
 {
@@ -31,6 +28,8 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		public List<Candle> Candles;
 		public readonly int Size;
 		public readonly float Angle;
+
+		[Newtonsoft.Json.JsonIgnore]
 		public readonly Rect Bounds;
 
 		private Path candlePath, heartPath;
@@ -142,11 +141,6 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			distanceToClosestNeighbor.ForEach(d => average += d);
 			average /= distanceToClosestNeighbor.Count;
 
-			float deviation = 0;
-			distanceToClosestNeighbor.ForEach(d => deviation += (float)Math.Pow(average - d, 2));
-			deviation /= distanceToClosestNeighbor.Count;
-			deviation = (float)Math.Sqrt(deviation);
-
 			return average;
 		}
 
@@ -182,8 +176,16 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		{
 			NumberOfCandles = numberOfCandles;
 			cake = new Cake(size, angle);
+
+			threads = new Thread[Environment.ProcessorCount];
+			internalCakes = new Cake[Environment.ProcessorCount];
+
+			for(int i = 0; i < Environment.ProcessorCount; i++)
+				internalCakes[i] = cake.Clone();
 		}
 
+		private Thread[] threads;
+		private Cake[] internalCakes;
 		public async void Optimize(int iterations, CancellationToken cancellationToken, Action endedCallback)
 		{
 			//0 heißt "endlos" wiederholen
@@ -193,73 +195,107 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			if (globalIterations == 0)
 			{
 				Random random = new Random();
-				for (int i = 0; i < NumberOfCandles; i++)
+				for (int thread = 0; thread < Environment.ProcessorCount; thread++)
 				{
-					int x, y;
-					do
+					var cake = internalCakes[thread];
+					for (int i = 0; i < NumberOfCandles; i++)
 					{
-						x = random.Next((int)cake.Bounds.X, (int)cake.Bounds.Width);
-						y = random.Next((int)cake.Bounds.Y, (int)cake.Bounds.Height);
+						int x, y;
+						do
+						{
+							x = random.Next((int)cake.Bounds.X, (int)cake.Bounds.Width);
+							y = random.Next((int)cake.Bounds.Y, (int)cake.Bounds.Height);
+						}
+						while (!cake.Contains(x, y));
+						cake.Candles.Add(new Candle(x, y, 0));
 					}
-					while (!cake.Contains(x, y));
-					cake.Candles.Add(new Candle(x, y, 0));
 				}
+			}
+			else
+			{
+				for (int i = 0; i < Environment.ProcessorCount; i++)
+					if (bestScore * 0.9 > internalCakes[i].CalculateScore())
+						internalCakes[i] = Cake.Clone();
 			}
 
 			await Task.Run(() =>
 			{
-				var random = new Random();
-				var cake = Cake.Clone();
-				float lastScore = cake.CalculateScore();
-				for (int i = 0; i < iterations; i++)
+				for(int i = 0; i < Environment.ProcessorCount; i++)
 				{
-					Interlocked.Increment(ref globalIterations);
-					int randomCandle = random.Next(NumberOfCandles);
-					int newX, newY;
-					int oldX = cake.Candles[randomCandle].X, oldY = cake.Candles[randomCandle].Y;
-					int currentTries = 0;
-					while(true)
-					{
-						//Wenn eine Kerze nicht mehr weiter optimiert werden kann, dann wird eine andere genommen
-						currentTries++;
-						if (currentTries == 1000)
-						{
-							currentTries = 0;
-							var tmp = cake.Candles[randomCandle];
-							tmp.X = oldX; tmp.Y = oldY;
-							cake.Candles[randomCandle] = tmp;
-							randomCandle = random.Next(NumberOfCandles);
-							oldX = cake.Candles[randomCandle].X;
-							oldY = cake.Candles[randomCandle].Y;
-						}
-
-						newX = oldX + (int)(cake.Size * random.NextDouble() * (random.NextDouble() >= 0.5 ? 1 : -1));
-						newY = oldY + (int)((cake.Bounds.Height / 4) * random.NextDouble() * (random.NextDouble() >= 0.5 ? 1 : -1));
-
-						if (!cake.Contains(newX, newY))
-							continue;
-
-						var tmp2 = cake.Candles[randomCandle];
-						tmp2.X = newX; tmp2.Y = newY;
-						cake.Candles[randomCandle] = tmp2;
-
-						if (cancellationToken.IsCancellationRequested)
-							break;
-
-						if (cake.CalculateScore() > lastScore)
-							break;
-					}
-
-					lastScore = cake.CalculateScore();
-					if (cancellationToken.IsCancellationRequested)
-					{
-						UpdateCake(cake.Clone(), lastScore).GetAwaiter().GetResult();
-						break;
-					}
-					UpdateCake(cake.Clone(), lastScore);
+					threads[i] = new Thread(OptimizeInternal);
+					threads[i].Start(new Tuple<int, int, CancellationToken>(i, iterations, cancellationToken));
+				}
+				for (int i = 0; i < Environment.ProcessorCount; i++)
+				{
+					threads[i].Join();
 				}
 			});
 			Application.Current.Dispatcher.Invoke(endedCallback);
+		}
+
+		private void OptimizeInternal(object args)
+		{
+			var argsTupel = (Tuple<int, int, CancellationToken>)args;
+			int threadId = argsTupel.Item1;
+			int iterations = argsTupel.Item2;
+			var cancellationToken = argsTupel.Item3;
+
+			var random = new Random();
+			var cake = internalCakes[threadId];
+			float lastScore = cake.CalculateScore();
+			for (int i = 0; i < iterations; i++)
+			{
+				if(threadId == 1)
+					Interlocked.Increment(ref globalIterations);
+				int randomCandle = random.Next(NumberOfCandles);
+				int newX, newY;
+				int oldX = cake.Candles[randomCandle].X, oldY = cake.Candles[randomCandle].Y;
+				int currentTries = 0;
+				while (true)
+				{
+					i++;
+					float cooldown = (float)Math.Ceiling(globalIterations / 500d);
+					//Wenn eine Kerze nicht mehr weiter optimiert werden kann, dann wird eine andere genommen
+					currentTries++;
+					if (currentTries == 1000 * cooldown)
+					{
+						currentTries = 0;
+						var tmp = cake.Candles[randomCandle];
+						tmp.X = oldX; tmp.Y = oldY;
+						cake.Candles[randomCandle] = tmp;
+						randomCandle = random.Next(NumberOfCandles);
+						oldX = cake.Candles[randomCandle].X;
+						oldY = cake.Candles[randomCandle].Y;
+					}
+
+					newX = oldX + (int)(((cake.Size * 2 * random.NextDouble()) / cooldown) * (random.NextDouble() >= 0.5 ? 1 : -1));
+					newY = oldY + (int)(((cake.Bounds.Height / 2) / cooldown) * random.NextDouble() * (random.NextDouble() >= 0.5 ? 1 : -1));
+
+					if (!cake.Contains(newX, newY))
+					{
+						i--;
+						continue;
+					}
+
+					var tmp2 = cake.Candles[randomCandle];
+					tmp2.X = newX; tmp2.Y = newY;
+					cake.Candles[randomCandle] = tmp2;
+
+					if (cancellationToken.IsCancellationRequested || i >= iterations)
+						break;
+
+					if (cake.CalculateScore() > lastScore)
+						break;
+				}
+
+				lastScore = cake.CalculateScore();
+				if (cancellationToken.IsCancellationRequested)
+				{
+					UpdateCake(cake.Clone(), lastScore).GetAwaiter().GetResult();
+					break;
+				}
+				UpdateCake(cake.Clone(), lastScore);
+			}
 		}
 
 		private async Task UpdateCake(Cake cake, float newScore)

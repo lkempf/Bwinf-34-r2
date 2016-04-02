@@ -44,7 +44,7 @@
             <GroupBox Header="Erzeugen">
                 <StackPanel>
                     <Label Content="Anzahl der Kerzen:"/>
-                    <Slider x:Name="CandleCountSlider" SmallChange="1" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" Minimum="2" Value="5" Maximum="50"/>
+                    <Slider x:Name="CandleCountSlider" SmallChange="1" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" Minimum="2" Value="5" Maximum="100" TickFrequency="10" LargeChange="10"/>
                     <Label Content="Anzahl der Iterationen:"/>
                     <TextBox x:Name="IterationsTextBox" Margin="4,-2,0,0" Text="0" TextChanged="IterationsTextBox_TextChanged"/>
                     <Button x:Name="StartButton" Content="Starten" Margin="4,4,0,0" Click="Button_Click_1"/>
