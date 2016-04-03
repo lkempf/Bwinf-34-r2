@@ -36,6 +36,11 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		private StreamGeometry heart;
 		private Point startPoint, circleIntersectionPoint, circleEndPoint, trianglePoint;
 
+		[Newtonsoft.Json.JsonIgnore]
+		public int NearestCandle = -1;
+		private float minValue;
+		private List<float> distanceToClosestNeighbor;
+
 		public Cake(int size, float angle)
 		{
 			Candles = new List<Candle>();
@@ -120,7 +125,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		public float CalculateScore()
 		{
-			List<float> distanceToClosestNeighbor = new List<float>(Candles.Count);
+			distanceToClosestNeighbor = new List<float>(Candles.Count);
 			for (int i = 0; i < Candles.Count; i++)
 			{
 				distanceToClosestNeighbor.Add(float.PositiveInfinity);
@@ -132,8 +137,21 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				{
 					if (i == j)
 						continue;
-					distanceToClosestNeighbor[i] = Math.Min(distanceToClosestNeighbor[i], (float)Math.Sqrt(
-						Math.Pow(Candles[i].X - Candles[j].X, 2) + Math.Pow(Candles[i].Y - Candles[j].Y, 2)));
+					float dist = (float)Math.Sqrt(Math.Pow(Candles[i].X - Candles[j].X, 2) + Math.Pow(Candles[i].Y - Candles[j].Y, 2));
+					if (dist < distanceToClosestNeighbor[i])
+					{
+						distanceToClosestNeighbor[i] = dist;
+					}
+				}
+			}
+
+			minValue = float.PositiveInfinity;
+			for (int i = 0; i < distanceToClosestNeighbor.Count; i++)
+			{
+				if (distanceToClosestNeighbor[i] < minValue)
+				{
+					minValue = distanceToClosestNeighbor[i];
+					NearestCandle = i;
 				}
 			}
 
@@ -143,6 +161,60 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 			return average;
 		}
+
+		//public float CalculateScorePartial(int i)
+		//{
+		//	if (distanceToClosestNeighbor == null)
+		//		return CalculateScore();
+
+		//	distanceToClosestNeighbor[i] = float.PositiveInfinity;
+		//	for (int j = 0; j < Candles.Count; j++)
+		//	{
+		//		if (i == j)
+		//			continue;
+		//		float dist = (float)Math.Sqrt(Math.Pow(Candles[i].X - Candles[j].X, 2) + Math.Pow(Candles[i].Y - Candles[j].Y, 2));
+		//		if (dist < distanceToClosestNeighbor[i])
+		//		{
+		//			distanceToClosestNeighbor[i] = dist;
+		//			distanceToClosestNeighbor[j] = Math.Min(distanceToClosestNeighbor[j], distanceToClosestNeighbor[i]);
+		//		}
+		//	}
+
+		//	distanceToClosestNeighbor[closestNeighbor[i]] = float.PositiveInfinity;
+		//	for (int j = 0; j < Candles.Count; j++)
+		//	{
+		//		if (closestNeighbor[i] == j)
+		//			continue;
+		//		float dist = (float)Math.Sqrt(Math.Pow(Candles[closestNeighbor[i]].X - Candles[j].X, 2) + Math.Pow(Candles[closestNeighbor[i]].Y - Candles[j].Y, 2));
+		//		if (dist < distanceToClosestNeighbor[closestNeighbor[i]])
+		//		{
+		//			distanceToClosestNeighbor[closestNeighbor[i]] = dist;
+		//			distanceToClosestNeighbor[j] = Math.Min(distanceToClosestNeighbor[j], distanceToClosestNeighbor[closestNeighbor[i]]);
+		//		}
+		//	}
+
+		//	minValue = float.PositiveInfinity;
+		//	maxValue = float.NegativeInfinity;
+		//	for (int j = 0; j < distanceToClosestNeighbor.Count; j++)
+		//	{
+		//		if (distanceToClosestNeighbor[j] < minValue)
+		//		{
+		//			minValue = distanceToClosestNeighbor[j];
+		//			NearestCandle = j;
+		//		}
+		//		if (distanceToClosestNeighbor[j] > maxValue)
+		//		{
+		//			maxValue = distanceToClosestNeighbor[j];
+		//			FarestCandle = j;
+		//		}
+		//	}
+
+		//	float average = 0;
+		//	distanceToClosestNeighbor.ForEach(d => average += d);
+		//	average /= distanceToClosestNeighbor.Count;
+
+		//	return average;
+		//}
 
 		public Cake Clone()
 		{
@@ -156,7 +228,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 	class CakeGenerator
 	{
-		public readonly int NumberOfCandles;
+		public readonly int NumberOfCandles, DegreeOfParallelization;
 		private float bestScore = float.NegativeInfinity;
 		private Cake cake;
 		private int globalIterations;
@@ -172,15 +244,16 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			}
 		}
 
-		public CakeGenerator(int numberOfCandles, int size, float angle)
+		public CakeGenerator(int numberOfCandles, int degreeOfParallelization, int size, float angle)
 		{
 			NumberOfCandles = numberOfCandles;
+			DegreeOfParallelization = degreeOfParallelization;
 			cake = new Cake(size, angle);
 
-			threads = new Thread[Environment.ProcessorCount];
-			internalCakes = new Cake[Environment.ProcessorCount];
+			threads = new Thread[DegreeOfParallelization];
+			internalCakes = new Cake[DegreeOfParallelization];
 
-			for(int i = 0; i < Environment.ProcessorCount; i++)
+			for (int i = 0; i < DegreeOfParallelization; i++)
 				internalCakes[i] = cake.Clone();
 		}
 
@@ -195,7 +268,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			if (globalIterations == 0)
 			{
 				Random random = new Random();
-				for (int thread = 0; thread < Environment.ProcessorCount; thread++)
+				for (int thread = 0; thread < DegreeOfParallelization; thread++)
 				{
 					var cake = internalCakes[thread];
 					for (int i = 0; i < NumberOfCandles; i++)
@@ -213,19 +286,19 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			}
 			else
 			{
-				for (int i = 0; i < Environment.ProcessorCount; i++)
+				for (int i = 0; i < DegreeOfParallelization; i++)
 					if (bestScore * 0.9 > internalCakes[i].CalculateScore())
 						internalCakes[i] = Cake.Clone();
 			}
 
 			await Task.Run(() =>
 			{
-				for(int i = 0; i < Environment.ProcessorCount; i++)
+				for (int i = 0; i < DegreeOfParallelization; i++)
 				{
 					threads[i] = new Thread(OptimizeInternal);
 					threads[i].Start(new Tuple<int, int, CancellationToken>(i, iterations, cancellationToken));
 				}
-				for (int i = 0; i < Environment.ProcessorCount; i++)
+				for (int i = 0; i < DegreeOfParallelization; i++)
 				{
 					threads[i].Join();
 				}
@@ -245,16 +318,27 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			float lastScore = cake.CalculateScore();
 			for (int i = 0; i < iterations; i++)
 			{
-				if(threadId == 1)
+				if (threadId == 1)
 					Interlocked.Increment(ref globalIterations);
-				int randomCandle = random.Next(NumberOfCandles);
+				int randomCandle = random.NextDouble() >= 0.25 ? cake.NearestCandle : random.Next(NumberOfCandles);
 				int newX, newY;
 				int oldX = cake.Candles[randomCandle].X, oldY = cake.Candles[randomCandle].Y;
 				int currentTries = 0;
 				while (true)
 				{
 					i++;
-					float cooldown = (float)Math.Ceiling(globalIterations / 500d);
+					float cooldown = (float)Math.Ceiling(globalIterations / 5000d);
+
+					//Evolutionen die nicht erfolgsversprechend sind zerstören
+					if (i != 0 && i % 10000 == 0)
+					{
+						if (bestScore * 0.9 > lastScore)
+						{
+							internalCakes[threadId] = cake = Cake.Clone();
+							lastScore = bestScore;
+						}
+					}
+
 					//Wenn eine Kerze nicht mehr weiter optimiert werden kann, dann wird eine andere genommen
 					currentTries++;
 					if (currentTries == 1000 * cooldown)
@@ -268,8 +352,10 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 						oldY = cake.Candles[randomCandle].Y;
 					}
 
-					newX = oldX + (int)(((cake.Size * 2 * random.NextDouble()) / cooldown) * (random.NextDouble() >= 0.5 ? 1 : -1));
-					newY = oldY + (int)(((cake.Bounds.Height / 2) / cooldown) * random.NextDouble() * (random.NextDouble() >= 0.5 ? 1 : -1));
+					newX = oldX + (int)(Math.Max(((cake.Size * 2) / cooldown) * random.NextDouble(), 1)
+						* (random.NextDouble() >= 0.5 ? 1 : -1));
+					newY = oldY + (int)(Math.Max(((cake.Bounds.Height / 2) / cooldown) * random.NextDouble(), 1)
+						* (random.NextDouble() >= 0.5 ? 1 : -1));
 
 					if (!cake.Contains(newX, newY))
 					{

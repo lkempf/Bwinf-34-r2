@@ -79,7 +79,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			if(!running)
 			{
 				if (generator == null || generator.NumberOfCandles != (int)Math.Round(CandleCountSlider.Value, 0))
-					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value);
+					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(ParallelizationSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value);
 				ProgressBar.IsIndeterminate = true;
 				source = new CancellationTokenSource();
 				generator.Optimize(int.Parse(IterationsTextBox.Text), source.Token, OptimizationEndedCallback);
@@ -117,6 +117,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			{
 				cake = JsonConvert.DeserializeObject<Cake>(File.ReadAllText(dialog.FileName));
 				cake.Render(ref DrawingCanvas);
+				CandleCountSlider.Value = cake.Candles.Count;
 			}
 			catch (JsonReaderException)
 			{
@@ -131,6 +132,11 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			dialog.OverwritePrompt = true;
 			dialog.ShowDialog();
 			File.WriteAllText(dialog.FileName, JsonConvert.SerializeObject(cake));
+		}
+
+		private void ParallelizationSlider_Loaded(object sender, RoutedEventArgs e)
+		{
+			ParallelizationSlider.Value = Environment.ProcessorCount;
 		}
 	}
 }
