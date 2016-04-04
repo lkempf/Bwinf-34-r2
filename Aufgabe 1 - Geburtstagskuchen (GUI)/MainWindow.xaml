@@ -29,7 +29,7 @@
                     <Label Content="Kuchengröße:"/>
                     <Slider x:Name="SizeSlider" SmallChange="10" Minimum="20" Maximum="100" LargeChange="10" TickFrequency="10" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" ValueChanged="SizeSlider_ValueChanged"/>
                     <Label Content="Kuchenwinkel:"/>
-                    <Slider x:Name="angleSlider" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" Maximum="80" LargeChange="5" TickFrequency="5" Value="45" Minimum="10" ValueChanged="angleSlider_ValueChanged"/>
+                    <Slider x:Name="angleSlider" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" Maximum="90" LargeChange="5" TickFrequency="5" Value="45" Minimum="10" ValueChanged="angleSlider_ValueChanged"/>
                 </StackPanel>
             </GroupBox>
             <GroupBox Header="Überprüfen">

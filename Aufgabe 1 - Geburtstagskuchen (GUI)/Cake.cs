@@ -58,7 +58,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			startPoint = new Point(Size - cosAngle * Size, Size + sinAngle * Size);
 			circleIntersectionPoint = new Point(2 * Size, Size);
 			circleEndPoint = new Point(Size * 3 + cosAngle * Size, Size + sinAngle * Size);
-			Vector angledVector = new Vector(Math.Cos(angle + Math.PI / 2), Math.Sin(angle + Math.PI / 2));
+			Vector angledVector = new Vector(-sinAngle, cosAngle);
 			double lineLength = (2 * Size - (Size * 3 + cosAngle * Size)) / angledVector.X;
 			trianglePoint = Point.Add(circleEndPoint, Vector.Multiply(angledVector, lineLength));
 
@@ -159,7 +159,11 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			distanceToClosestNeighbor.ForEach(d => average += d);
 			average /= distanceToClosestNeighbor.Count;
 
-			return average;
+			float deviation = 0;
+			distanceToClosestNeighbor.ForEach(d => deviation += (float)Math.Abs(average - d));
+			deviation /= distanceToClosestNeighbor.Count;
+
+			return average - deviation;
 		}
 
 		//public float CalculateScorePartial(int i)
@@ -341,7 +345,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 					//Wenn eine Kerze nicht mehr weiter optimiert werden kann, dann wird eine andere genommen
 					currentTries++;
-					if (currentTries == 1000 * cooldown)
+					if (currentTries == 1000/* * cooldown*/)
 					{
 						currentTries = 0;
 						var tmp = cake.Candles[randomCandle];
