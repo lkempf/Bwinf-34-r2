@@ -23,7 +23,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		}
 	}
 
-	class Cake
+	class Cake : IDisposable
 	{
 		public List<Candle> Candles;
 		public readonly int Size;
@@ -97,14 +97,20 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		public void Render(ref Canvas target)
 		{
+			if(target.Children.Count == 2 && target.Children[1] is Path && target.Children[1] == candlePath)
+			{
+				RedrawCandles();
+				return;
+			}
+
 			target.Children.Clear();
 
 			heartPath = new Path();
-			target.Children.Add(heartPath);
 			heartPath.Data = heart;
 			heartPath.Stroke = new SolidColorBrush(Colors.CornflowerBlue);
 			heartPath.StrokeThickness = 1;
 			heartPath.Fill = new SolidColorBrush(Colors.CornflowerBlue);
+			target.Children.Add(heartPath);
 
 			candlePath = new Path();
 			candlePath.Stroke = new SolidColorBrush(Colors.Red);
@@ -228,6 +234,13 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				cake.Candles.Add(candle);
 			return cake;
 		}
+
+		public void Dispose()
+		{
+			heartPath = null;
+			candlePath = null;
+			heart = null;
+		}
 	}
 
 	class CakeGenerator
@@ -263,8 +276,11 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private Thread[] threads;
 		private Cake[] internalCakes;
-		public async void Optimize(int iterations, CancellationToken cancellationToken, Action endedCallback)
+		private Action redrawCallback;
+		public async void Optimize(int iterations, CancellationToken cancellationToken, Action endedCallback, Action redrawCallback = null)
 		{
+			this.redrawCallback = redrawCallback;
+
 			//0 heißt "endlos" wiederholen
 			if (iterations == 0)
 				iterations = int.MaxValue;
@@ -322,7 +338,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			float lastScore = cake.CalculateScore();
 			for (int i = 0; i < iterations; i++)
 			{
-				if (threadId == 1)
+				if (threadId == 0)
 					Interlocked.Increment(ref globalIterations);
 				int randomCandle = random.NextDouble() >= 0.25 ? cake.NearestCandle : random.Next(NumberOfCandles);
 				int newX, newY;
@@ -332,6 +348,9 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				{
 					i++;
 					float cooldown = (float)Math.Ceiling(globalIterations / 5000d);
+
+					if (i % 10000 == 0 || threadId == 0)
+						Application.Current.Dispatcher.InvokeAsync(redrawCallback);
 
 					//Evolutionen die nicht erfolgsversprechend sind zerstören
 					if (i != 0 && i % 10000 == 0)

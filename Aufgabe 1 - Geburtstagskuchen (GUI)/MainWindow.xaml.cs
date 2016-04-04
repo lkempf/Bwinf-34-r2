@@ -82,7 +82,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(ParallelizationSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value);
 				ProgressBar.IsIndeterminate = true;
 				source = new CancellationTokenSource();
-				generator.Optimize(int.Parse(IterationsTextBox.Text), source.Token, OptimizationEndedCallback);
+				generator.Optimize(int.Parse(IterationsTextBox.Text), source.Token, OptimizationEndedCallback, () => generator.Cake.Render(ref DrawingCanvas));
 				StartButton.Content = "Stop";
 				running = true;
 			}

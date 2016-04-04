@@ -20,7 +20,6 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 		private class Node
 		{
 			public List<Node> Neighbours { get; private set; } = new List<Node>();
-			public List<Node> ReverseNeighbours { get; private set; } = new List<Node>();
 			public bool IsExit { get; set; } = false;
 			public int Index { get; private set; }
 
@@ -127,12 +126,10 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			{
 				if (node != currentCombo.First())
 				{
-					currentCombo.First().ReverseNeighbours.Add(node);
 					node.Neighbours.Add(currentCombo.First());
 				}
 				if (node != currentCombo.Last())
 				{
-					currentCombo.Last().ReverseNeighbours.Add(node);
 					node.Neighbours.Add(currentCombo.Last());
 				}
 			}
