@@ -76,13 +76,17 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private void Button_Click_1(object sender, RoutedEventArgs e)
 		{
-			if(!running)
+			if (!running)
 			{
 				if (generator == null || generator.NumberOfCandles != (int)Math.Round(CandleCountSlider.Value, 0))
 					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(ParallelizationSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value);
 				ProgressBar.IsIndeterminate = true;
 				source = new CancellationTokenSource();
-				generator.Optimize(int.Parse(IterationsTextBox.Text), source.Token, OptimizationEndedCallback, () => generator.Cake.Render(ref DrawingCanvas));
+				generator.Optimize(int.Parse(IterationsTextBox.Text), source.Token, OptimizationEndedCallback, () =>
+				{
+					generator.Cake.Render(ref DrawingCanvas);
+					//ScoreLabel.Content = generator.Cake.CalculateScore();
+				});
 				StartButton.Content = "Stop";
 				running = true;
 			}
@@ -137,6 +141,11 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		private void ParallelizationSlider_Loaded(object sender, RoutedEventArgs e)
 		{
 			ParallelizationSlider.Value = Environment.ProcessorCount;
+		}
+
+		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+		{
+			generator?.Dispose();
 		}
 	}
 }

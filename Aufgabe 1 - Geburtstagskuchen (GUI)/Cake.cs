@@ -23,7 +23,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		}
 	}
 
-	class Cake : IDisposable
+	class Cake
 	{
 		public List<Candle> Candles;
 		public readonly int Size;
@@ -234,16 +234,9 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				cake.Candles.Add(candle);
 			return cake;
 		}
-
-		public void Dispose()
-		{
-			heartPath = null;
-			candlePath = null;
-			heart = null;
-		}
 	}
 
-	class CakeGenerator
+	class CakeGenerator : IDisposable
 	{
 		public readonly int NumberOfCandles, DegreeOfParallelization;
 		private float bestScore = float.NegativeInfinity;
@@ -316,6 +309,8 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				for (int i = 0; i < DegreeOfParallelization; i++)
 				{
 					threads[i] = new Thread(OptimizeInternal);
+					threads[i].Name = "Evolution worker " + i;
+					threads[i].Priority = ThreadPriority.BelowNormal;
 					threads[i].Start(new Tuple<int, int, CancellationToken>(i, iterations, cancellationToken));
 				}
 				for (int i = 0; i < DegreeOfParallelization; i++)
@@ -349,7 +344,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					i++;
 					float cooldown = (float)Math.Ceiling(globalIterations / 5000d);
 
-					if (i % 10000 == 0 || threadId == 0)
+					if (i % 5000 == 0 || threadId == 0)
 						Application.Current.Dispatcher.InvokeAsync(redrawCallback);
 
 					//Evolutionen die nicht erfolgsversprechend sind zerstören
@@ -416,10 +411,19 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					if (newScore > bestScore)
 					{
 						bestScore = newScore;
+						//this.cake.TransferUIControl(cake);
 						this.cake = cake;
 					}
 				}
 			});
+		}
+
+		public void Dispose()
+		{
+			for(int i = 0; i < DegreeOfParallelization; i++)
+			{
+				threads[i].Abort();
+			}
 		}
 	}
 }
