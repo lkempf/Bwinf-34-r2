@@ -421,7 +421,6 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					if (newScore > bestScore)
 					{
 						bestScore = newScore;
-						//this.cake.TransferUIControl(cake);
 						this.cake = cake;
 					}
 				}
