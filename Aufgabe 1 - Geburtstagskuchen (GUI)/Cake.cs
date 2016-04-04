@@ -23,7 +23,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		}
 	}
 
-	class Cake : IDisposable
+	class Cake
 	{
 		public List<Candle> Candles;
 		public readonly int Size;
@@ -234,16 +234,9 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				cake.Candles.Add(candle);
 			return cake;
 		}
-
-		public void Dispose()
-		{
-			heartPath = null;
-			candlePath = null;
-			heart = null;
-		}
 	}
 
-	class CakeGenerator
+	class CakeGenerator : IDisposable
 	{
 		public readonly int NumberOfCandles, DegreeOfParallelization;
 		private float bestScore = float.NegativeInfinity;
@@ -274,13 +267,26 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				internalCakes[i] = cake.Clone();
 		}
 
+		public CakeGenerator(Cake cake, int degreeOfParallelization)
+		{
+			this.cake = cake;
+			DegreeOfParallelization = degreeOfParallelization;
+			NumberOfCandles = cake.Candles.Count;
+
+			threads = new Thread[DegreeOfParallelization];
+			internalCakes = new Cake[DegreeOfParallelization];
+
+			for (int i = 0; i < DegreeOfParallelization; i++)
+				internalCakes[i] = cake.Clone();
+
+			//Workaround um zu verhindern das der Kuchen automatisch überschrieben wird
+			globalIterations = 1;
+		}
+
 		private Thread[] threads;
 		private Cake[] internalCakes;
-		private Action redrawCallback;
-		public async void Optimize(int iterations, CancellationToken cancellationToken, Action endedCallback, Action redrawCallback = null)
+		public async void Optimize(int iterations, CancellationToken cancellationToken, Action endedCallback)
 		{
-			this.redrawCallback = redrawCallback;
-
 			//0 heißt "endlos" wiederholen
 			if (iterations == 0)
 				iterations = int.MaxValue;
@@ -316,6 +322,8 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				for (int i = 0; i < DegreeOfParallelization; i++)
 				{
 					threads[i] = new Thread(OptimizeInternal);
+					threads[i].Name = "Evolution worker " + i;
+					threads[i].Priority = ThreadPriority.BelowNormal;
 					threads[i].Start(new Tuple<int, int, CancellationToken>(i, iterations, cancellationToken));
 				}
 				for (int i = 0; i < DegreeOfParallelization; i++)
@@ -348,9 +356,6 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				{
 					i++;
 					float cooldown = (float)Math.Ceiling(globalIterations / 5000d);
-
-					if (i % 10000 == 0 || threadId == 0)
-						Application.Current.Dispatcher.InvokeAsync(redrawCallback);
 
 					//Evolutionen die nicht erfolgsversprechend sind zerstören
 					if (i != 0 && i % 10000 == 0)
@@ -416,10 +421,19 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					if (newScore > bestScore)
 					{
 						bestScore = newScore;
+						//this.cake.TransferUIControl(cake);
 						this.cake = cake;
 					}
 				}
 			});
+		}
+
+		public void Dispose()
+		{
+			for(int i = 0; i < DegreeOfParallelization; i++)
+			{
+				threads[i].Abort();
+			}
 		}
 	}
 }
