@@ -43,8 +43,13 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		{
 			if (!running)
 			{
+				int color = 0;
+				if (YellowRadioButton.IsChecked.GetValueOrDefault())
+					color = 1;
+				else if (GreenRadioButton.IsChecked.GetValueOrDefault())
+					color = 2;
 				var mousePosition = e.GetPosition(DrawingCanvas);
-				cake.AddCandle((int)mousePosition.X, (int)mousePosition.Y, 0);
+				cake.AddCandle((int)mousePosition.X, (int)mousePosition.Y, color);
 			}
 		}
 
@@ -81,13 +86,13 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			generator?.Dispose();
 			generator = null;
 		}
-
+		
 		private void Button_Click_1(object sender, RoutedEventArgs e)
 		{
 			if (!running)
 			{
 				if (generator == null || generator.NumberOfCandles != (int)Math.Round(CandleCountSlider.Value, 0))
-					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(ParallelizationSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value);
+					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(ParallelizationSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value, (int)Math.Round(ColorCountSlider.Value));
 				ProgressBar.IsIndeterminate = true;
 				source = new CancellationTokenSource();
 				generator.Optimize(int.Parse(IterationsTextBox.Text), source.Token, OptimizationEndedCallback);

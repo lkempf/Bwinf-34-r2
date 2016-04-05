@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Aufgabe_1___Geburtstagskuchen__GUI_"
         mc:Ignorable="d"
-        Title="MainWindow" Height="469.446" Width="590.185" Closing="Window_Closing">
+        Title="MainWindow" Height="555.567" Width="699.385" Closing="Window_Closing">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -30,6 +30,12 @@
                     <Slider x:Name="SizeSlider" SmallChange="10" Minimum="20" Maximum="100" LargeChange="10" TickFrequency="10" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" ValueChanged="SizeSlider_ValueChanged"/>
                     <Label Content="Kuchenwinkel:"/>
                     <Slider x:Name="angleSlider" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" Maximum="90" LargeChange="5" TickFrequency="5" Value="45" Minimum="10" ValueChanged="angleSlider_ValueChanged"/>
+                    <Label Content="Kerzenfarbe:"/>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="RedRadioButton" Background="Red" IsChecked="True"/>
+                        <RadioButton x:Name="YellowRadioButton" Background="Yellow"/>
+                        <RadioButton x:Name="GreenRadioButton" Background="GreenYellow"/>
+                    </StackPanel>
                 </StackPanel>
             </GroupBox>
             <GroupBox Header="Überprüfen">
@@ -45,6 +51,8 @@
                 <StackPanel>
                     <Label Content="Anzahl der Kerzen:"/>
                     <Slider x:Name="CandleCountSlider" SmallChange="1" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" Minimum="2" Value="5" Maximum="100" TickFrequency="10" LargeChange="10"/>
+                    <Label Content="Anzahl der Farben:"/>
+                    <Slider x:Name="ColorCountSlider" SmallChange="1" Minimum="1" Maximum="3" TickPlacement="BottomRight" AutoToolTipPlacement="TopLeft" Value="1"/>
                     <Label Content="Parallelisierung:"/>
                     <Slider x:Name="ParallelizationSlider" Minimum="2" Maximum="16" LargeChange="2" TickFrequency="2" SmallChange="1" AutoToolTipPlacement="TopLeft" TickPlacement="BottomRight" Loaded="ParallelizationSlider_Loaded"/>
                     <Label Content="Anzahl der Iterationen:"/>

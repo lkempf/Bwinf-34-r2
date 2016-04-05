@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Linq;
 
 namespace Aufgabe_1___Geburtstagskuchen__GUI_
 {
@@ -32,7 +33,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		[Newtonsoft.Json.JsonIgnore]
 		public readonly Rect Bounds;
 
-		private Path candlePath, heartPath;
+		private Path redCandlePath, yellowCandlePath, greenCandlePath, heartPath;
 		private StreamGeometry heart;
 		private Point startPoint, circleIntersectionPoint, circleEndPoint, trianglePoint;
 
@@ -81,7 +82,19 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 				if (renderCandle)
 				{
-					GeometryGroup candleGroup = (GeometryGroup)candlePath.Data;
+					GeometryGroup candleGroup = null;
+					switch (color)
+					{
+						case 0: //Rot
+							candleGroup = (GeometryGroup)redCandlePath.Data;
+							break;
+						case 1: //Gelb
+							candleGroup = (GeometryGroup)yellowCandlePath.Data;
+							break;
+						case 2: //Grün
+							candleGroup = (GeometryGroup)greenCandlePath.Data;
+							break;
+					}
 					candleGroup.Children.Add(new EllipseGeometry(new Point(x, y), 2, 2));
 				}
 
@@ -97,7 +110,8 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		public void Render(ref Canvas target)
 		{
-			if(target.Children.Count == 2 && target.Children[1] is Path && target.Children[1] == candlePath)
+			if (target.Children.Count == 2 && target.Children[1] is Path &&
+				(target.Children[1] == redCandlePath || target.Children[1] == yellowCandlePath || target.Children[1] == greenCandlePath))
 			{
 				RedrawCandles();
 				return;
@@ -112,43 +126,67 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			heartPath.Fill = new SolidColorBrush(Colors.CornflowerBlue);
 			target.Children.Add(heartPath);
 
-			candlePath = new Path();
-			candlePath.Stroke = new SolidColorBrush(Colors.Red);
-			candlePath.Fill = new SolidColorBrush(Colors.Red);
+			redCandlePath = new Path();
+			redCandlePath.Stroke = redCandlePath.Fill = new SolidColorBrush(Colors.Red);
+			yellowCandlePath = new Path();
+			yellowCandlePath.Stroke = yellowCandlePath.Fill = new SolidColorBrush(Colors.Yellow);
+			greenCandlePath = new Path();
+			greenCandlePath.Stroke = greenCandlePath.Fill = new SolidColorBrush(Colors.YellowGreen);
+
 			RedrawCandles();
-			target.Children.Add(candlePath);
+			target.Children.Add(redCandlePath);
+			target.Children.Add(yellowCandlePath);
+			target.Children.Add(greenCandlePath);
 		}
 
 		private void RedrawCandles()
 		{
-			GeometryGroup candleGroup = new GeometryGroup();
+			GeometryGroup redCandleGroup = new GeometryGroup(), yellowCandleGroup = new GeometryGroup(), greenCandleGroup = new GeometryGroup();
 			foreach (var candle in Candles)
 			{
-				candleGroup.Children.Add(new EllipseGeometry(new Point(candle.X, candle.Y), 2, 2));
+				switch (candle.Color)
+				{
+					case 0: //Rot
+						redCandleGroup.Children.Add(new EllipseGeometry(new Point(candle.X, candle.Y), 2, 2));
+						break;
+					case 1: //Gelb
+						yellowCandleGroup.Children.Add(new EllipseGeometry(new Point(candle.X, candle.Y), 2, 2));
+						break;
+					case 2: //Grün
+						greenCandleGroup.Children.Add(new EllipseGeometry(new Point(candle.X, candle.Y), 2, 2));
+						break;
+				}
 			}
-			candlePath.Data = candleGroup;
+			redCandlePath.Data = redCandleGroup;
+			yellowCandlePath.Data = yellowCandleGroup;
+			greenCandlePath.Data = greenCandleGroup;
 		}
 
 		public float CalculateScore()
 		{
-			distanceToClosestNeighbor = new List<float>(Candles.Count);
+			distanceToClosestNeighbor = new List<float>();
 			for (int i = 0; i < Candles.Count; i++)
-			{
 				distanceToClosestNeighbor.Add(float.PositiveInfinity);
-			}
 
+			List<List<int>> colorGroupings = new List<List<int>>();
 			for (int i = 0; i < Candles.Count; i++)
 			{
-				for (int j = 0; j < Candles.Count; j++)
+				var candle = Candles[i];
+				if (candle.Color >= colorGroupings.Count)
 				{
-					if (i == j)
-						continue;
-					float dist = (float)Math.Sqrt(Math.Pow(Candles[i].X - Candles[j].X, 2) + Math.Pow(Candles[i].Y - Candles[j].Y, 2));
-					if (dist < distanceToClosestNeighbor[i])
+					for (int j = colorGroupings.Count; j <= candle.Color; j++)
 					{
-						distanceToClosestNeighbor[i] = dist;
+						colorGroupings.Add(new List<int>());
 					}
 				}
+
+				colorGroupings[candle.Color].Add(i);
+			}
+
+			List<float> scores = new List<float>();
+			foreach (var color in colorGroupings)
+			{
+				scores.Add(CalculateScoreForColor(color));
 			}
 
 			minValue = float.PositiveInfinity;
@@ -161,13 +199,37 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				}
 			}
 
-			float average = 0;
-			distanceToClosestNeighbor.ForEach(d => average += d);
-			average /= distanceToClosestNeighbor.Count;
+			float average = scores.Average();
 
 			float deviation = 0;
-			distanceToClosestNeighbor.ForEach(d => deviation += (float)Math.Abs(average - d));
-			deviation /= distanceToClosestNeighbor.Count;
+			scores.ForEach(s => deviation += Math.Abs(average - s));
+			deviation /= scores.Count;
+
+			return average;
+		}
+
+		private float CalculateScoreForColor(List<int> colorerCandles)
+		{
+			for (int i = 0; i < colorerCandles.Count; i++)
+			{
+				for (int j = 0; j < colorerCandles.Count; j++)
+				{
+					if (i == j)
+						continue;
+					float dist = (float)Math.Sqrt(Math.Pow(Candles[colorerCandles[i]].X - Candles[colorerCandles[j]].X, 2)
+						+ Math.Pow(Candles[colorerCandles[i]].Y - Candles[colorerCandles[j]].Y, 2));
+					if (dist < distanceToClosestNeighbor[colorerCandles[i]])
+					{
+						distanceToClosestNeighbor[colorerCandles[i]] = dist;
+					}
+				}
+			}
+
+			float average = (float)colorerCandles.Average();
+
+			float deviation = 0;
+			colorerCandles.ForEach(c => deviation += Math.Abs(average - distanceToClosestNeighbor[c]));
+			deviation /= colorerCandles.Count;
 
 			return average - deviation;
 		}
@@ -238,7 +300,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 	class CakeGenerator : IDisposable
 	{
-		public readonly int NumberOfCandles, DegreeOfParallelization;
+		public readonly int NumberOfCandles, DegreeOfParallelization, Colors;
 		private float bestScore = float.NegativeInfinity;
 		private Cake cake;
 		private int globalIterations;
@@ -254,10 +316,11 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			}
 		}
 
-		public CakeGenerator(int numberOfCandles, int degreeOfParallelization, int size, float angle)
+		public CakeGenerator(int numberOfCandles, int degreeOfParallelization, int size, float angle, int colors)
 		{
 			NumberOfCandles = numberOfCandles;
 			DegreeOfParallelization = degreeOfParallelization;
+			Colors = colors;
 			cake = new Cake(size, angle);
 
 			threads = new Thread[DegreeOfParallelization];
@@ -294,19 +357,36 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			if (globalIterations == 0)
 			{
 				Random random = new Random();
+				int[] candleColors = new int[Colors];
 				for (int thread = 0; thread < DegreeOfParallelization; thread++)
 				{
 					var cake = internalCakes[thread];
+					int currentColor = -1, nextSwitch = 0;
 					for (int i = 0; i < NumberOfCandles; i++)
 					{
-						int x, y;
+						int x, y, color = 0;
+						if (thread == 0)
+						{
+							color = random.Next(Colors);
+							candleColors[color]++;
+						}
+						else
+						{
+							if (nextSwitch == i && currentColor < Colors)
+							{
+								currentColor++;
+								nextSwitch += candleColors[currentColor];
+							}
+							color = currentColor;
+						}
+
 						do
 						{
 							x = random.Next((int)cake.Bounds.X, (int)cake.Bounds.Width);
 							y = random.Next((int)cake.Bounds.Y, (int)cake.Bounds.Height);
 						}
 						while (!cake.Contains(x, y));
-						cake.Candles.Add(new Candle(x, y, 0));
+						cake.Candles.Add(new Candle(x, y, color));
 					}
 				}
 			}
@@ -429,7 +509,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		public void Dispose()
 		{
-			for(int i = 0; i < DegreeOfParallelization; i++)
+			for (int i = 0; i < DegreeOfParallelization; i++)
 			{
 				threads[i].Abort();
 			}
