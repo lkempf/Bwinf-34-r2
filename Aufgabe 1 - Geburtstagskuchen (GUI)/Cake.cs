@@ -199,13 +199,14 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				}
 			}
 
-			float average = scores.Average();
+			float averageColor = scores.Average();
+			float averageAll = distanceToClosestNeighbor.Average();
 
 			float deviation = 0;
-			scores.ForEach(s => deviation += Math.Abs(average - s));
-			deviation /= scores.Count;
+			distanceToClosestNeighbor.ForEach(d => deviation += Math.Abs(averageAll - d));
+			deviation /= distanceToClosestNeighbor.Count;
 
-			return average;
+			return averageColor + averageAll - deviation;
 		}
 
 		private float CalculateScoreForColor(List<int> colorerCandles)
