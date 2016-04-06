@@ -189,24 +189,51 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				scores.Add(CalculateScoreForColor(color));
 			}
 
-			minValue = float.PositiveInfinity;
-			for (int i = 0; i < distanceToClosestNeighbor.Count; i++)
+			var distanceToClosestNeighbor2 = new List<float>(Candles.Count);
+			for (int i = 0; i < Candles.Count; i++)
 			{
-				if (distanceToClosestNeighbor[i] < minValue)
+				distanceToClosestNeighbor2.Add(float.PositiveInfinity);
+			}
+
+			for (int i = 0; i < Candles.Count; i++)
+			{
+				for (int j = 0; j < Candles.Count; j++)
 				{
-					minValue = distanceToClosestNeighbor[i];
+					if (i == j)
+						continue;
+					float dist = (float)Math.Sqrt(Math.Pow(Candles[i].X - Candles[j].X, 2) + Math.Pow(Candles[i].Y - Candles[j].Y, 2));
+					if (dist < distanceToClosestNeighbor2[i])
+					{
+						distanceToClosestNeighbor2[i] = dist;
+					}
+				}
+			}
+
+			minValue = float.PositiveInfinity;
+			for (int i = 0; i < distanceToClosestNeighbor2.Count; i++)
+			{
+				if (distanceToClosestNeighbor2[i] < minValue)
+				{
+					minValue = distanceToClosestNeighbor2[i];
 					NearestCandle = i;
 				}
 			}
 
 			float averageColor = scores.Average();
-			float averageAll = distanceToClosestNeighbor.Average();
+			float averageAll = distanceToClosestNeighbor2.Average();
 
 			float deviation = 0;
-			distanceToClosestNeighbor.ForEach(d => deviation += Math.Abs(averageAll - d));
-			deviation /= distanceToClosestNeighbor.Count;
+			distanceToClosestNeighbor2.ForEach(d => deviation += Math.Abs(averageAll - d));
+			deviation /= distanceToClosestNeighbor2.Count;
 
-			return averageColor + averageAll - deviation;
+			int colorMisdistribution = 0;
+			for(int i = 0; i < Candles.Count; i++)
+			{
+				if (Math.Abs(distanceToClosestNeighbor2[i] - distanceToClosestNeighbor[i]) < 0.0001f)
+					colorMisdistribution++;
+			}
+
+			return 2 * averageColor +  4 * averageAll - 4 * deviation - colorMisdistribution;
 		}
 
 		private float CalculateScoreForColor(List<int> colorerCandles)
@@ -428,7 +455,8 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			for (int i = 0; i < iterations; i++)
 			{
 				if (threadId == 0)
-					Interlocked.Increment(ref globalIterations);
+					globalIterations++;
+
 				int randomCandle = random.NextDouble() >= 0.25 ? cake.NearestCandle : random.Next(NumberOfCandles);
 				int newX, newY;
 				int oldX = cake.Candles[randomCandle].X, oldY = cake.Candles[randomCandle].Y;
