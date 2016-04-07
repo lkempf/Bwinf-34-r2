@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Linq;
+using System.Reflection;
 
 namespace Aufgabe_1___Geburtstagskuchen__GUI_
 {
@@ -168,6 +169,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			for (int i = 0; i < Candles.Count; i++)
 				distanceToClosestNeighbor.Add(float.PositiveInfinity);
 
+			//Indexe der Kerzen nach Kerzenfarbe gruppieren
 			List<List<int>> colorGroupings = new List<List<int>>();
 			for (int i = 0; i < Candles.Count; i++)
 			{
@@ -238,6 +240,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private float CalculateScoreForColor(List<int> colorerCandles)
 		{
+			//Berechne Distanzen zwischen allen Paaren in coloredCandles
 			for (int i = 0; i < colorerCandles.Count; i++)
 			{
 				for (int j = 0; j < colorerCandles.Count; j++)
@@ -261,62 +264,8 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 			return average - deviation;
 		}
-
-		//public float CalculateScorePartial(int i)
-		//{
-		//	if (distanceToClosestNeighbor == null)
-		//		return CalculateScore();
-
-		//	distanceToClosestNeighbor[i] = float.PositiveInfinity;
-		//	for (int j = 0; j < Candles.Count; j++)
-		//	{
-		//		if (i == j)
-		//			continue;
-		//		float dist = (float)Math.Sqrt(Math.Pow(Candles[i].X - Candles[j].X, 2) + Math.Pow(Candles[i].Y - Candles[j].Y, 2));
-		//		if (dist < distanceToClosestNeighbor[i])
-		//		{
-		//			distanceToClosestNeighbor[i] = dist;
-		//			distanceToClosestNeighbor[j] = Math.Min(distanceToClosestNeighbor[j], distanceToClosestNeighbor[i]);
-		//		}
-		//	}
-
-		//	distanceToClosestNeighbor[closestNeighbor[i]] = float.PositiveInfinity;
-		//	for (int j = 0; j < Candles.Count; j++)
-		//	{
-		//		if (closestNeighbor[i] == j)
-		//			continue;
-		//		float dist = (float)Math.Sqrt(Math.Pow(Candles[closestNeighbor[i]].X - Candles[j].X, 2) + Math.Pow(Candles[closestNeighbor[i]].Y - Candles[j].Y, 2));
-		//		if (dist < distanceToClosestNeighbor[closestNeighbor[i]])
-		//		{
-		//			distanceToClosestNeighbor[closestNeighbor[i]] = dist;
-		//			distanceToClosestNeighbor[j] = Math.Min(distanceToClosestNeighbor[j], distanceToClosestNeighbor[closestNeighbor[i]]);
-		//		}
-		//	}
-
-		//	minValue = float.PositiveInfinity;
-		//	maxValue = float.NegativeInfinity;
-		//	for (int j = 0; j < distanceToClosestNeighbor.Count; j++)
-		//	{
-		//		if (distanceToClosestNeighbor[j] < minValue)
-		//		{
-		//			minValue = distanceToClosestNeighbor[j];
-		//			NearestCandle = j;
-		//		}
-		//		if (distanceToClosestNeighbor[j] > maxValue)
-		//		{
-		//			maxValue = distanceToClosestNeighbor[j];
-		//			FarestCandle = j;
-		//		}
-		//	}
-
-		//	float average = 0;
-		//	distanceToClosestNeighbor.ForEach(d => average += d);
-		//	average /= distanceToClosestNeighbor.Count;
-
-		//	return average;
-		//}
-
-		public Cake Clone()
+		
+		public Cake Clone() //Mache mehr Kuchen
 		{
 			var cake = new Cake(Size, Angle);
 			cake.Candles.Capacity = Candles.Count;
@@ -326,13 +275,14 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		}
 	}
 
-	class CakeGenerator : IDisposable
+	class CakeGenerator
 	{
 		public readonly int NumberOfCandles, DegreeOfParallelization, Colors;
 		private float bestScore = float.NegativeInfinity;
 		private Cake cake;
 		private int globalIterations;
 
+		//Der Zugriff auf den Kuchen ist threadsafe
 		public Cake Cake
 		{
 			get
@@ -346,6 +296,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		public CakeGenerator(int numberOfCandles, int degreeOfParallelization, int size, float angle, int colors)
 		{
+			//Spannende Zuweisungen
 			NumberOfCandles = numberOfCandles;
 			DegreeOfParallelization = degreeOfParallelization;
 			Colors = colors;
@@ -369,10 +320,13 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			if (iterations == 0)
 				iterations = int.MaxValue;
 
+			//Es wurden noch keine Kuchen erstellt
 			if (globalIterations == 0)
 			{
 				Random random = new Random();
 				int[] candleColors = new int[Colors];
+
+				//Erstelle einen zufälligen Kuchen für jeden Thread
 				for (int thread = 0; thread < DegreeOfParallelization; thread++)
 				{
 					var cake = internalCakes[thread];
@@ -380,12 +334,12 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					for (int i = 0; i < NumberOfCandles; i++)
 					{
 						int x, y, color = 0;
-						if (thread == 0)
+						if (thread == 0) //Wähle zufällige Kerzenfarbe und zähle mit
 						{
 							color = random.Next(Colors);
 							candleColors[color]++;
 						}
-						else
+						else //Wähle solange die gleiche Farbe bis gleichviele Kerzen diese Frabe haben wie auf dem Kuchen von Thread 0
 						{
 							if (nextSwitch == i && currentColor < Colors)
 							{
@@ -395,6 +349,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 							color = currentColor;
 						}
 
+						//Ereuge solange zufällige Positionen bis eine gültig ist
 						do
 						{
 							x = random.Next((int)cake.Bounds.X, (int)cake.Bounds.Width);
@@ -405,6 +360,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					}
 				}
 			}
+			//Es gibt schon Kuchen -> Selektion
 			else
 			{
 				for (int i = 0; i < DegreeOfParallelization; i++)
@@ -412,25 +368,31 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 						internalCakes[i] = Cake.Clone();
 			}
 
+			//Diese Methode ist asynchron -> Tue irgendwas asynchrones damit der Compiler nicht meckert
 			await Task.Run(() =>
 			{
+				//Erzeuge und starte die Threads
 				for (int i = 0; i < DegreeOfParallelization; i++)
 				{
 					threads[i] = new Thread(OptimizeInternal);
 					threads[i].Name = "Evolution worker " + i;
-					threads[i].Priority = ThreadPriority.BelowNormal;
+					threads[i].Priority = ThreadPriority.BelowNormal; //Sonst laggt die GUI zu sehr
 					threads[i].Start(new Tuple<int, int, CancellationToken>(i, iterations, cancellationToken));
 				}
+				//Warte darauf, dass alle Threads durchlaufen
 				for (int i = 0; i < DegreeOfParallelization; i++)
 				{
 					threads[i].Join();
 				}
 			});
+
+			//Führe das Callback auf dem GUI-Thread aus
 			Application.Current.Dispatcher.Invoke(endedCallback);
 		}
 
 		private void OptimizeInternal(object args)
 		{
+			//Argumente in sinnvolle Typen zurückverwandeln
 			var argsTupel = (Tuple<int, int, CancellationToken>)args;
 			int threadId = argsTupel.Item1;
 			int iterations = argsTupel.Item2;
@@ -441,6 +403,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			float lastScore = cake.CalculateScore();
 			for (int i = 0; i < iterations; i++)
 			{
+				//Es muss nicht alles n-fach gezählt werden
 				if (threadId == 0)
 					globalIterations++;
 
@@ -453,11 +416,13 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					i++;
 					float cooldown = (float)Math.Ceiling(globalIterations / 5000d);
 
+					//BEGIN AUSKOMMENTIERTE ZEICHENLOGIK
 					//if (i % 10000 == 0 || threadId == 0)
 					//	Application.Current.Dispatcher.InvokeAsync(redrawCallback);
-
+					//END AUSKOMMENTIERTE ZEICHENLOGIK
+					
 					//Evolutionen die nicht erfolgsversprechend sind zerstören
-					if (i != 0 && i % 10000 == 0)
+					if (i != 0 && i % 10000 == 0) //Zeit für Selektion
 					{
 						if (bestScore * 0.9 > lastScore)
 						{
@@ -466,11 +431,12 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 						}
 					}
 
-					//Wenn eine Kerze nicht mehr weiter optimiert werden kann, dann wird eine andere genommen
 					currentTries++;
-					if (currentTries == 1000/* * cooldown*/)
+					//Wenn eine Kerze nicht mehr weiter optimiert werden kann, dann wird eine andere genommen
+					if (currentTries == 1000)
 					{
 						currentTries = 0;
+						//Aus stucts in einer Liste wird by value zugegriffen -> Hacky workaround
 						var tmp = cake.Candles[randomCandle];
 						tmp.X = oldX; tmp.Y = oldY;
 						cake.Candles[randomCandle] = tmp;
@@ -479,21 +445,27 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 						oldY = cake.Candles[randomCandle].Y;
 					}
 
-					newX = oldX + (int)(Math.Max(((cake.Size * 2) / cooldown) * random.NextDouble(), 1)
-						* (random.NextDouble() >= 0.5 ? 1 : -1));
+					newX = oldX + (int)(Math.Max(((cake.Size * 2) / cooldown) * random.NextDouble(), 1)  //Verschiebungsrange mit cooldown
+						* 
+						(random.NextDouble() >= 0.5 ? 1 : -1)); //Zufälliges Vorzeichen
 					newY = oldY + (int)(Math.Max(((cake.Bounds.Height / 2) / cooldown) * random.NextDouble(), 1)
-						* (random.NextDouble() >= 0.5 ? 1 : -1));
+						* 
+						(random.NextDouble() >= 0.5 ? 1 : -1));
 
+					//Wenn eine ungültige Mutation erzeugt wird, dann wird sie nicht mitgezählt
 					if (!cake.Contains(newX, newY))
 					{
 						i--;
+						currentTries--;
 						continue;
 					}
 
+					//Mal wieder der selbe Workaround
 					var tmp2 = cake.Candles[randomCandle];
 					tmp2.X = newX; tmp2.Y = newY;
 					cake.Candles[randomCandle] = tmp2;
 
+					//Abbruchbedingung
 					if (cancellationToken.IsCancellationRequested || i >= iterations)
 						break;
 
@@ -504,15 +476,23 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				lastScore = cake.CalculateScore();
 				if (cancellationToken.IsCancellationRequested)
 				{
+					//Es sollte sichergestellt werden, dass der Kuchen wirklich aktualisiert wird, wenn die Optimierung abgeschlossen ist
+					//Sonst kann es sein, dass ein veralteter Kuchen gerendert wird
 					UpdateCake(cake.Clone(), lastScore).GetAwaiter().GetResult();
 					break;
 				}
+
+				//Es ist egal wann der beste Kuchen aktualisiert wird
 				UpdateCake(cake.Clone(), lastScore);
 			}
 		}
 
+		//Ermöglicht es den besten gefundenen Kuchen threadsafe zu aktualisieren
 		private async Task UpdateCake(Cake cake, float newScore)
 		{
+			if (cake == null)
+				throw new TheCakeIsALieException();
+
 			await Task.Run(() =>
 			{
 				lock (this.cake)
@@ -520,14 +500,14 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					if (newScore > bestScore)
 					{
 						bestScore = newScore;
-						//this.cake.TransferUIControl(cake);
 						this.cake = cake;
 					}
 				}
 			});
 		}
 
-		public void Dispose()
+		//Verhindert lustige NullReferenceExceptions beim Schließen des Programms
+		public void Cancle()
 		{
 			for (int i = 0; i < DegreeOfParallelization; i++)
 			{
