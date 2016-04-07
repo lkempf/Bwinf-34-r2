@@ -147,7 +147,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			}
 			catch (JsonReaderException)
 			{
-				MessageBox.Show("Die Datei konnte nicht geöffnet werden");
+				throw new TheCakeIsALieException();
 			}
 		}
 
@@ -167,7 +167,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			generator?.Dispose();
+			generator?.Cancle();
 		}
 	}
 }
