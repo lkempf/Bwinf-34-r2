@@ -174,6 +174,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		{
 			distanceToClosestNeighbor = new List<float>();
 			for (int i = 0; i < Candles.Count; i++)
+			{
 				distanceToClosestNeighbor.Add(float.PositiveInfinity);
 
 			//Indexe der Kerzen nach Kerzenfarbe gruppieren
