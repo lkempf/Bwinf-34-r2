@@ -83,7 +83,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 			if(timer?.Enabled ?? false)
 				timer.Stop();
-			generator?.Dispose();
+			generator?.Cancle();
 			generator = null;
 		}
 		

@@ -274,7 +274,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			colorerCandles.ForEach(c => deviation += Math.Abs(average - distanceToClosestNeighbor[c]));
 			deviation /= colorerCandles.Count;
 
-			return average - deviation;
+			return average;
 		}
 		
 		public Cake Clone() //Mache mehr Kuchen
@@ -439,7 +439,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				while (true)
 				{
 					i++;
-					float cooldown = (float)Math.Ceiling(globalIterations / 5000d);
+					float cooldown = (float)Math.Min(Math.Ceiling(globalIterations / 10000d), 20);
 
 					//Evolutionen die nicht erfolgsversprechend sind zerstören
 					if (i != 0 && i % 10000 == 0) //Zeit für Selektion
