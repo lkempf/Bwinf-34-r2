@@ -33,13 +33,13 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		[Newtonsoft.Json.JsonIgnore]
 		public readonly Rect Bounds;
+		[Newtonsoft.Json.JsonIgnore]
+		public int NearestCandle = -1;
 
 		private Path redCandlePath, yellowCandlePath, greenCandlePath, heartPath;
 		private StreamGeometry heart;
 		private Point startPoint, circleIntersectionPoint, circleEndPoint, trianglePoint;
 
-		[Newtonsoft.Json.JsonIgnore]
-		public int NearestCandle = -1;
 		private float minValue;
 		private List<float> distanceToClosestNeighbor;
 
@@ -54,16 +54,23 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private void CalculateShape()
 		{
+			//Vorberechnen für bessere Performance
 			float angle = Angle * (float)(Math.PI / 180);
 			float sinAngle = (float)Math.Sin(angle);
 			float cosAngle = (float)Math.Cos(angle);
+
+			//P_L
 			startPoint = new Point(Size - cosAngle * Size, Size + sinAngle * Size);
+			//P_O
 			circleIntersectionPoint = new Point(2 * Size, Size);
+			//P_R
 			circleEndPoint = new Point(Size * 3 + cosAngle * Size, Size + sinAngle * Size);
+			//P_U
 			Vector angledVector = new Vector(-sinAngle, cosAngle);
 			double lineLength = (2 * Size - (Size * 3 + cosAngle * Size)) / angledVector.X;
 			trianglePoint = Point.Add(circleEndPoint, Vector.Multiply(angledVector, lineLength));
 
+			//Form aus Punkten erstellen
 			heart = new StreamGeometry();
 			using (StreamGeometryContext ctx = heart.Open())
 			{
@@ -80,8 +87,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			if (Contains(x, y))
 			{
 				Candles.Add(new Candle(x, y, color));
-
-				if (renderCandle)
+				if (renderCandle) //Spart Renderingoverhead für CakeGenrator
 				{
 					GeometryGroup candleGroup = null;
 					switch (color)
@@ -98,7 +104,6 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 					}
 					candleGroup.Children.Add(new EllipseGeometry(new Point(x, y), 2, 2));
 				}
-
 				return true;
 			}
 			return false;
@@ -111,15 +116,17 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		public void Render(ref Canvas target)
 		{
+			//Wenn das Herz bereits gerendert wurde, reicht es nur die Kerzen neu zu zeichnen
 			if (target.Children.Count == 2 && target.Children[1] is Path &&
 				(target.Children[1] == redCandlePath || target.Children[1] == yellowCandlePath || target.Children[1] == greenCandlePath))
 			{
 				RedrawCandles();
 				return;
 			}
-
+			
 			target.Children.Clear();
 
+			//Herz rendern
 			heartPath = new Path();
 			heartPath.Data = heart;
 			heartPath.Stroke = new SolidColorBrush(Colors.CornflowerBlue);
@@ -127,6 +134,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			heartPath.Fill = new SolidColorBrush(Colors.CornflowerBlue);
 			target.Children.Add(heartPath);
 
+			//Kerzen rendern
 			redCandlePath = new Path();
 			redCandlePath.Stroke = redCandlePath.Fill = new SolidColorBrush(Colors.Red);
 			yellowCandlePath = new Path();
@@ -174,8 +182,9 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			for (int i = 0; i < Candles.Count; i++)
 			{
 				var candle = Candles[i];
-				if (candle.Color >= colorGroupings.Count)
+				if (candle.Color >= colorGroupings.Count) //Es existiert noch keine Gruppierung mit dieser Farbe
 				{
+					//Solange Gruppierungen erstellen, bis die entsprechende Gruppierung exitiert
 					for (int j = colorGroupings.Count; j <= candle.Color; j++)
 					{
 						colorGroupings.Add(new List<int>());
@@ -185,12 +194,14 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				colorGroupings[candle.Color].Add(i);
 			}
 
+			//Score für jede Farbe ermittlen
 			List<float> scores = new List<float>();
 			foreach (var color in colorGroupings)
 			{
 				scores.Add(CalculateScoreForColor(color));
 			}
 
+			//Distanzen zwischen allen Kerzen ermitteln
 			var distanceToClosestNeighbor2 = new List<float>(Candles.Count);
 			for (int i = 0; i < Candles.Count; i++)
 			{
@@ -211,6 +222,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 				}
 			}
 
+			//Kerze mit dem nächsten Nachbarn ermitteln
 			minValue = float.PositiveInfinity;
 			for (int i = 0; i < distanceToClosestNeighbor2.Count; i++)
 			{
@@ -228,6 +240,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			distanceToClosestNeighbor2.ForEach(d => deviation += Math.Abs(averageAll - d));
 			deviation /= distanceToClosestNeighbor2.Count;
 
+			//Anzahl der Kerzen, deren nächster Nachbar die gleiche Farbe hat ermitteln
 			int colorMisdistribution = 0;
 			for(int i = 0; i < Candles.Count; i++)
 			{
