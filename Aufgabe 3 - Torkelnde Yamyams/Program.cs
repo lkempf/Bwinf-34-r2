@@ -55,6 +55,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 				}
 
 				//Benchmark(world, 1);
+				Console.ReadLine();
 			}
 		}
 
