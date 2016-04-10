@@ -172,7 +172,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
 		{
-			var bitmap = new RenderTargetBitmap((int)Math.Round(cake.Bounds.Width, 0), (int)Math.Round(cake.Bounds.Height, 0), 96, 96, PixelFormats.Pbgra32);
+			var bitmap = new RenderTargetBitmap((int)Math.Round(cake.Bounds.Width, 0), (int)Math.Round(cake.Bounds.Height, 0) + 18, 96, 96, PixelFormats.Pbgra32);
 			bitmap.Render(DrawingCanvas);
 			var pngImage = new PngBitmapEncoder();
 			pngImage.Frames.Add(BitmapFrame.Create(bitmap));

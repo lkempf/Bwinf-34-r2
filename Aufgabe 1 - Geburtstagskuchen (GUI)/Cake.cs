@@ -533,7 +533,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		{
 			for (int i = 0; i < DegreeOfParallelization; i++)
 			{
-				threads[i].Abort();
+				threads[i]?.Abort();
 			}
 		}
 	}
