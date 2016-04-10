@@ -43,8 +43,13 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 		{
 			if (!running)
 			{
+				int color = 0;
+				if (YellowRadioButton.IsChecked.GetValueOrDefault())
+					color = 1;
+				else if (GreenRadioButton.IsChecked.GetValueOrDefault())
+					color = 2;
 				var mousePosition = e.GetPosition(DrawingCanvas);
-				cake.AddCandle((int)mousePosition.X, (int)mousePosition.Y, 0);
+				cake.AddCandle((int)mousePosition.X, (int)mousePosition.Y, color);
 			}
 		}
 
@@ -78,16 +83,16 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 			if(timer?.Enabled ?? false)
 				timer.Stop();
-			generator?.Dispose();
+			generator?.Cancle();
 			generator = null;
 		}
-
+		
 		private void Button_Click_1(object sender, RoutedEventArgs e)
 		{
 			if (!running)
 			{
 				if (generator == null || generator.NumberOfCandles != (int)Math.Round(CandleCountSlider.Value, 0))
-					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(ParallelizationSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value);
+					generator = new CakeGenerator((int)Math.Round(CandleCountSlider.Value, 0), (int)Math.Round(ParallelizationSlider.Value, 0), (int)Math.Round(SizeSlider.Value, 0), (float)angleSlider.Value, (int)Math.Round(ColorCountSlider.Value));
 				ProgressBar.IsIndeterminate = true;
 				source = new CancellationTokenSource();
 				generator.Optimize(int.Parse(IterationsTextBox.Text), source.Token, OptimizationEndedCallback);
@@ -142,7 +147,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			}
 			catch (JsonReaderException)
 			{
-				MessageBox.Show("Die Datei konnte nicht geöffnet werden");
+				throw new TheCakeIsALieException();
 			}
 		}
 
@@ -162,7 +167,20 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			generator?.Dispose();
+			generator?.Cancle();
+		}
+
+		private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
+		{
+			var bitmap = new RenderTargetBitmap((int)Math.Round(cake.Bounds.Width, 0), (int)Math.Round(cake.Bounds.Height, 0) + 18, 96, 96, PixelFormats.Pbgra32);
+			bitmap.Render(DrawingCanvas);
+			var pngImage = new PngBitmapEncoder();
+			pngImage.Frames.Add(BitmapFrame.Create(bitmap));
+
+			using (Stream fileStream = File.Create("screenshot.png"))
+			{
+				pngImage.Save(fileStream);
+			}
 		}
 
 		private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
