@@ -20,6 +20,7 @@
             <MenuItem Header="Datei">
                 <MenuItem x:Name="OpenButton" Header="Öffnen" Click="OpenButton_Click"/>
                 <MenuItem x:Name="SaveButton" Header="Speichern" Click="SaveButton_Click"/>
+                <MenuItem x:Name="ScreenshotButton" Header="Screenshot" Click="ScreenshotButton_Click"/>
             </MenuItem>
         </Menu>
         <Canvas x:Name="DrawingCanvas" Grid.RowSpan="2" Grid.Row="1" MouseDown="DrawingCanvas_MouseDown" Loaded="DrawingCanvas_Loaded" Background="White"/>

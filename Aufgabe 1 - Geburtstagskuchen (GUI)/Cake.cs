@@ -176,6 +176,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			for (int i = 0; i < Candles.Count; i++)
 			{
 				distanceToClosestNeighbor.Add(float.PositiveInfinity);
+			}
 
 			//Indexe der Kerzen nach Kerzenfarbe gruppieren
 			List<List<int>> colorGroupings = new List<List<int>>();
@@ -275,7 +276,7 @@ namespace Aufgabe_1___Geburtstagskuchen__GUI_
 			colorerCandles.ForEach(c => deviation += Math.Abs(average - distanceToClosestNeighbor[c]));
 			deviation /= colorerCandles.Count;
 
-			return average;
+			return average - deviation;
 		}
 		
 		public Cake Clone() //Mache mehr Kuchen
