@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Aufgabe_3___Torkelnde_Yamyams
 {
@@ -12,43 +10,51 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 	{
 		static void Main(string[] args)
 		{
-			#region Choose input file
-			string[] fileNames = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\Samples", "*.txt", SearchOption.TopDirectoryOnly);
-			if (fileNames.Length == 0)
+			while (true)
 			{
-				Console.WriteLine("Keine *.txt-Datei im Programmverzeichnis gefunden!");
-				Console.WriteLine("\r\nBeliebige Taste drücken zum Beenden...");
-				Console.ReadKey();
-				return;
+				#region Choose input file
+				string[] fileNames = Directory.GetFiles(Directory.GetCurrentDirectory() + "\\Samples", "*.txt", SearchOption.TopDirectoryOnly);
+				if (fileNames.Length == 0)
+				{
+					Console.WriteLine("Keine *.txt-Datei im Programmverzeichnis gefunden!");
+					Console.WriteLine("\r\nBeliebige Taste drücken zum Beenden...");
+					Console.ReadKey();
+					return;
+				}
+
+				int index = 0;
+				ConsoleKey key;
+				do
+				{
+					Console.Clear();
+					Console.WriteLine("Datei auswählen (mit Pfeiltasten):");
+					Console.WriteLine(fileNames[index].Substring(Directory.GetCurrentDirectory().Length + 1));
+					key = Console.ReadKey().Key;
+					if (key == ConsoleKey.DownArrow)
+						index = (index + 1) % fileNames.Length;
+					else if (key == ConsoleKey.UpArrow)
+						index = index == 0 ? fileNames.Length - 1 : index - 1;
+				} while (key != ConsoleKey.Enter);
+				#endregion
+
+				//Welt einlesen
+				World world = new World(File.ReadAllText(fileNames[index]));
+
+				var solution = world.Solve();
+				Console.WriteLine($"Es wurden {solution.Count()} sichere Felder gefunden.");
+				if (solution.Count() <= 100)
+					foreach (var result in solution)
+						Console.WriteLine(result.ToString());
+
+				using (StreamWriter fileStream = new StreamWriter(File.Create("output.txt")))
+				{
+					foreach (var result in solution)
+						fileStream.WriteLine(result.ToString());
+				}
+
+				//Benchmark(world, 1);
+				Console.ReadLine();
 			}
-
-			int index = 0;
-			ConsoleKey key;
-			do
-			{
-				Console.Clear();
-				Console.WriteLine("Datei auswählen (mit Pfeiltasten):");
-				Console.WriteLine(fileNames[index].Substring(Directory.GetCurrentDirectory().Length + 1));
-				key = Console.ReadKey().Key;
-				if (key == ConsoleKey.DownArrow)
-					index = (index + 1) % fileNames.Length;
-				else if (key == ConsoleKey.UpArrow)
-					index = index == 0 ? fileNames.Length - 1 : index - 1;
-			} while (key != ConsoleKey.Enter);
-			#endregion
-
-			//Welt einlesen
-			World world = new World(File.ReadAllText(fileNames[index]));
-
-			Console.WriteLine(world.Solve().Count());
-			//foreach(var result in world.Solve())
-			//{
-			//	Console.WriteLine(result.ToString());
-			//}
-
-			Benchmark(world, 1);
-
-			Console.ReadLine();
 		}
 
 		private static IEnumerable<Tuple<int, int>> result;
