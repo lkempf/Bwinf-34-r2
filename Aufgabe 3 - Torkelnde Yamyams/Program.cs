@@ -57,7 +57,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			}
 		}
 
-		private static IEnumerable<Tuple<int, int>> result;
+		private static IEnumerable<Tuple<int, int, int>> result;
 		private static void Benchmark(World world, int iterations)
 		{
 			if (Debugger.IsAttached)
@@ -65,7 +65,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 			GC.Collect();
 			GC.WaitForPendingFinalizers();
-			GC.Collect();
+			GC.Collect(); 
 
 			//Aufwärmen
 			world.Solve();

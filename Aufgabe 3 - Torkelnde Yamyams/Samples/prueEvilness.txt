@@ -1,0 +1,8 @@
+############
+#S#SSSSSS#S#
+#SSS##SSSSS#
+#SSS#SSSE#S#
+#SSSSSSS##S#
+#SSSSSSSSSS#
+#S#ESSSSE###
+############
