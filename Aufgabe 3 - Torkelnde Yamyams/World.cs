@@ -13,13 +13,14 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 		{
 			Wall = 0,
 			Nothing = 1,
+			Stone = 2,
 			Exit = 999
 		}
 
 		[DebuggerDisplay("{Position} IsExit: {IsExit}")]
 		private class Node
 		{
-			public List<Node> Neighbours { get; private set; } = new List<Node>();
+			public List<Tuple<Node, int>> Neighbours { get; private set; } = new List<Tuple<Node, int>>();
 			public bool IsExit { get; set; } = false;
 			public int Index { get; private set; }
 
@@ -49,6 +50,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 
 		private Tile[,] worldMap;
 		private List<Node> worldGraph;
+		private int stoneCount;
 
 		public World(string asciiMap)
 		{
@@ -61,6 +63,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			Node[,] positionToNode = new Node[worldMap.GetLength(0), worldMap.GetLength(1)];
 			worldGraph = new List<Node>(worldMap.Length);
 			var currentCombo = new List<Node>();
+			var stonePositions = new List<int>();
 
 			//Alle horizontalen Nachbarn finden
 			for (int i = 0; i < worldMap.GetLength(0); i++)
@@ -78,16 +81,20 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 						//Wenn ein YamYam über einen Ausgang erreicht, dann erreicht es nicht die nächste Wand -> Ausgang ist Combobreaker
 						if (worldMap[i, j] == Tile.Exit)
 						{
-							ProcessCombo(ref currentCombo);
+							ProcessCombo(ref currentCombo, ref stonePositions);
 							currentCombo.Add(node);
+						}
+						else if (worldMap[i, j] == Tile.Stone)
+						{
+							stonePositions.Add(j + 1);
 						}
 					}
 					else if (currentCombo.Count != 0) //Wand
 					{
-						ProcessCombo(ref currentCombo);
+						ProcessCombo(ref currentCombo, ref stonePositions);
 					}
 				}
-				ProcessCombo(ref currentCombo);
+				ProcessCombo(ref currentCombo, ref stonePositions);
 			}
 
 			//Alle vertikalen Nachbarn finden
@@ -102,16 +109,20 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 						currentCombo.Add(node);
 						if(worldMap[i, j] == Tile.Exit)
 						{
-							ProcessCombo(ref currentCombo);
+							ProcessCombo(ref currentCombo, ref stonePositions);
 							currentCombo.Add(node);
+						}
+						else if (worldMap[i, j] == Tile.Stone)
+						{
+							stonePositions.Add(i + 1);
 						}
 					}
 					else if (currentCombo.Count != 0) //Wand
 					{
-						ProcessCombo(ref currentCombo);
+						ProcessCombo(ref currentCombo, ref stonePositions);
 					}
 				}
-				ProcessCombo(ref currentCombo);
+				ProcessCombo(ref currentCombo, ref stonePositions);
 			}
 
 			//Wenn man ein Ausgangsfeld erreicht, dann kann man es nicht mehr verlassen -> Alle ausgehenden Kanten von Ausgängen müssen gelöscht werden
@@ -120,19 +131,30 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 		}
 
 		//Fügt eine Kante für alle Knoten in einer Sequenz zum Ende und Anfang der Sequenz hinzu
-		private void ProcessCombo(ref List<Node> currentCombo)
+		private void ProcessCombo(ref List<Node> currentCombo, ref List<int> stonePositions)
 		{
-			foreach (var node in currentCombo)
+			if (currentCombo.Count >= 2)
 			{
-				if (node != currentCombo.First())
+				bool isX = currentCombo[0].Position.Item1 == currentCombo[1].Position.Item1;
+				int stoneCount = 0;
+				foreach (var node in currentCombo)
 				{
-					node.Neighbours.Add(currentCombo.First());
-				}
-				if (node != currentCombo.Last())
-				{
-					node.Neighbours.Add(currentCombo.Last());
+					//Wenn der nächste Stein gefunden wird, dann erhöht sich die Anzahl an Steinen von der aktuellen Node bis zum rechten Ende
+					if(stoneCount < stonePositions.Count)
+						if(stonePositions[stoneCount] == (isX ? node.Position.Item1 : node.Position.Item2))
+							stoneCount++;
+
+					if (node != currentCombo.First())
+					{
+						node.Neighbours.Add(new Tuple<Node, int>(currentCombo.First(), stonePositions.Count - stoneCount));
+					}
+					if (node != currentCombo.Last())
+					{
+						node.Neighbours.Add(new Tuple<Node, int>(currentCombo.Last(), stoneCount));
+					}
 				}
 			}
+			stonePositions.Clear();
 			currentCombo.Clear();
 		}
 
@@ -160,6 +182,10 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 							break;
 						case 'E':
 							worldMap[x, y] = Tile.Exit;
+							break;
+						case 'S':
+							worldMap[x, y] = Tile.Stone;
+							stoneCount++;
 							break;
 						default:
 							throw new FormatException($"{asciiMap[x * numberOfRows + y]} ist kein gültiges Zeichen");
@@ -192,7 +218,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 				bool onlyLeadsToExit = true, hasOut = false;
 				foreach (var node in connectedComponents[i])
 				{
-					foreach(var neigbour in node.Neighbours)
+					foreach(var neigbour in node.Neighbours.Select(e => e.Item1))
 					{
 						if (neigbour.ConnectedComponent != node.ConnectedComponent)
 						{
@@ -231,7 +257,7 @@ namespace Aufgabe_3___Torkelnde_Yamyams
 			stack.Push(currentNode.Index);
 
 			//Durch Nachbarn iterieren
-			foreach (var neighbour in currentNode.Neighbours)
+			foreach (var neighbour in currentNode.Neighbours.Select(e => e.Item1))
 			{
 				//Unbesuchter Nachbar -> besuchen
 				if (neighbour.Label == -1)
